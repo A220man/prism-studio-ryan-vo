@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "name": "prism-studio-ryan-vo",
+  "owner": "A220man",
+  "email": "ryandtvo@gmail.com",
+  "domain": "AI/ML developer tools",
+  "summary": "Work in progress: prism-studio-ryan-vo",
+  "workflows": [
+    "Parse codebase into typed AST nodes and semantic edges (calls, imports, inheritance)",
+    "Query and filter knowledge graph with pagination and export to JSON/GraphML",
+    "Visualize graph structure in React dashboard with search and detail views"
+  ],
+  "auth": "oidc-keycloak-saml-broker",
+  "llm_providers": [
+    "openai-compatible",
+    "anthropic",
+    "gemini",
+    "ollama"
+  ],
+  "status": "work-in-progress"
+}

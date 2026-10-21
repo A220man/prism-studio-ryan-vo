@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "current_feature": "skeleton",
+  "features": [
+    {
+      "id": "skeleton",
+      "title": "FastAPI + React skeleton with health endpoint",
+      "status": "done",
+      "acceptance": [
+        "Backend health endpoint returns 200 with version",
+        "Frontend builds and loads",
+        "Docker compose brings up backend + frontend",
+        "Basic tests pass"
+      ],
+      "implementation": [
+        "backend/app/main.py",
+        "backend/app/core/config.py",
+        "backend/app/core/database.py",
+        "backend/app/api/health.py",
+        "backend/app/api/graph.py",
+        "backend/tests/test_health.py",
+        "frontend/src/main.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/api/client.ts",
+        "frontend/src/test-setup.ts",
+        "frontend/src/App.test.tsx",
+        "backend/Dockerfile",
+        "frontend/Dockerfile",
+        "frontend/nginx.conf",
+        "compose.yaml",
+        "keycloak/realm.json",
+        ".env.example",
+        ".gitignore",
+        "portfolio.json",
+        "README.md",
+        "CHANGELOG.md",
+        "LICENSE",
+        ".github/workflows/ci.yml"
+      ],
+      "tests": [
+        "backend/tests/test_health.py",
+        "frontend/src/App.test.tsx"
+      ]
+    },
+    {
+      "id": "ast-parsing",
+      "title": "Deterministic AST parsing for Python files",
+      "status": "planned",
+      "acceptance": [
+        "Parse Python files into nodes (functions, classes, imports)",
+        "Extract edges (calls, imports, inheritance)",
+        "Store in SQLite with pagination"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "graph-api",
+      "title": "Graph query API with filtering",
+      "status": "planned",
+      "acceptance": [
+        "Query nodes by type/name",
+        "Query edges by type",
+        "Export graph as JSON/GraphML"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "frontend-dashboard",
+      "title": "React dashboard with graph visualization",
+      "status": "planned",
+      "acceptance": [
+        "File tree with parse status",
+        "Graph view with nodes/edges",
+        "Search and filter"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "oidc-auth",
+      "title": "Keycloak OIDC authentication",
+      "status": "planned",
+      "acceptance": [
+        "Login/logout flow",
+        "Protected API endpoints",
+        "Role-based access"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "multi-language",
+      "title": "Support for TypeScript/JavaScript, SQL, YAML",
+      "status": "planned",
+      "acceptance": [
+        "Parse TS/JS files",
+        "Parse SQL schemas",
+        "Parse YAML configs"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "llm-explanations",
+      "title": "Optional LLM-powered edge explanations",
+      "status": "planned",
+      "acceptance": [
+        "Configurable provider adapters",
+        "Advisory labels on LLM output",
+        "Grounded in actual graph data"
+      ],
+      "implementation": [],
+      "tests": []
+    }
+  ]
+}
