@@ -4,7 +4,7 @@ Each round completes one feature or repair. Future items are planned, not implem
 
 ## Current round
 
-skeleton
+ast-parsing
 
 ## Roadmap
 
@@ -24,21 +24,29 @@ Tests: `backend/tests/test_health.py`, `frontend/src/App.test.tsx`
 
 ### ast-parsing — Deterministic AST parsing for Python files
 
-Status: planned
+Status: done
 
 Acceptance:
 - Parse Python files into nodes (functions, classes, imports)
 - Extract edges (calls, imports, inheritance)
 - Store in SQLite with pagination
 
+Implementation: `backend/app/services/ast_parser.py`, `backend/app/models/graph.py`, `backend/app/core/database.py`, `backend/app/api/graph.py`
+
+Tests: `backend/tests/test_ast_parser.py`, `backend/tests/test_health.py`
+
 ### graph-api — Graph query API with filtering
 
-Status: planned
+Status: done
 
 Acceptance:
 - Query nodes by type/name
 - Query edges by type
 - Export graph as JSON/GraphML
+
+Implementation: `backend/app/api/graph.py`, `backend/app/models/graph.py`, `backend/app/core/database.py`, `frontend/src/api/client.ts`
+
+Tests: `backend/tests/test_health.py`
 
 ### frontend-dashboard — React dashboard with graph visualization
 

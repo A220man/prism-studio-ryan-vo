@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "current_feature": "skeleton",
+  "current_feature": "ast-parsing",
   "features": [
     {
       "id": "skeleton",
@@ -45,26 +45,41 @@
     {
       "id": "ast-parsing",
       "title": "Deterministic AST parsing for Python files",
-      "status": "planned",
+      "status": "done",
       "acceptance": [
         "Parse Python files into nodes (functions, classes, imports)",
         "Extract edges (calls, imports, inheritance)",
         "Store in SQLite with pagination"
       ],
-      "implementation": [],
-      "tests": []
+      "implementation": [
+        "backend/app/services/ast_parser.py",
+        "backend/app/models/graph.py",
+        "backend/app/core/database.py",
+        "backend/app/api/graph.py"
+      ],
+      "tests": [
+        "backend/tests/test_ast_parser.py",
+        "backend/tests/test_health.py"
+      ]
     },
     {
       "id": "graph-api",
       "title": "Graph query API with filtering",
-      "status": "planned",
+      "status": "done",
       "acceptance": [
         "Query nodes by type/name",
         "Query edges by type",
         "Export graph as JSON/GraphML"
       ],
-      "implementation": [],
-      "tests": []
+      "implementation": [
+        "backend/app/api/graph.py",
+        "backend/app/models/graph.py",
+        "backend/app/core/database.py",
+        "frontend/src/api/client.ts"
+      ],
+      "tests": [
+        "backend/tests/test_health.py"
+      ]
     },
     {
       "id": "frontend-dashboard",
