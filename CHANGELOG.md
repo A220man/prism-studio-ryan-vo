@@ -1,9 +1,17 @@
 # Changelog
 
+## 1.3.0 — work-in-progress checkpoint
+
+Partial code published for continued development. Known issues: STATUS.md.
+
 ## 1.2.0 — work-in-progress checkpoint
 
 Partial code published for continued development. Known issues: STATUS.md.
 
+### Added
+- AST parser support for lambda functions (`lambda` node type)
+- AST parser support for comprehensions: list (`listcomp`), set (`setcomp`), dict (`dictcomp`), generator (`genexp`)
+- New tests for lambda and comprehension parsing
 ## 1.1.0 — work-in-progress checkpoint
 
 Partial code published for continued development. Known issues: STATUS.md.
