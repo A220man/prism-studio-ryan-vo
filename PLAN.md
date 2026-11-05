@@ -27,8 +27,8 @@ Tests: `backend/tests/test_health.py`, `frontend/src/App.test.tsx`
 Status: done
 
 Acceptance:
-- Parse Python files into nodes (functions, classes, imports)
-- Extract edges (calls, imports, inheritance)
+- Parse Python files into nodes (functions, classes, imports, lambdas, comprehensions)
+- Extract edges (calls, imports, inheritance, containment)
 - Store in SQLite with pagination
 
 Implementation: `backend/app/services/ast_parser.py`, `backend/app/models/graph.py`, `backend/app/core/database.py`, `backend/app/api/graph.py`

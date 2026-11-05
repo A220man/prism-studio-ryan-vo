@@ -245,3 +245,69 @@ from .. import parent
         levels = [n.node_metadata.get("level") for n in import_from_nodes]
         assert 1 in levels  # from . import
         assert 2 in levels  # from .. import
+def test_lambda_functions():
+    """Test parsing lambda functions."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        test_file = Path(tmpdir) / "test.py"
+        test_file.write_text("""
+def foo():
+    f = lambda x: x + 1
+    g = lambda a, b: a * b
+    return f, g
+
+class MyClass:
+    method = lambda self: "method"
+""")
+
+        parser = PythonASTParser(tmpdir)
+        result = parser.parse_file(test_file)
+
+        assert len(result.errors) == 0
+        lambda_nodes = [n for n in result.nodes if n.type == "lambda"]
+        assert len(lambda_nodes) == 3
+        # Check metadata
+        for ln in lambda_nodes:
+            assert "args" in ln.node_metadata
+            assert "returns" in ln.node_metadata
+        # First lambda: lambda x: x + 1
+        assert lambda_nodes[0].node_metadata["args"] == ["x"]
+        # Second lambda: lambda a, b: a * b
+        assert lambda_nodes[1].node_metadata["args"] == ["a", "b"]
+        # Class lambda: lambda self: "method"
+        assert lambda_nodes[2].node_metadata["args"] == ["self"]
+
+
+def test_comprehensions():
+    """Test parsing list, set, dict comprehensions and generator expressions."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        test_file = Path(tmpdir) / "test.py"
+        test_file.write_text("""
+def foo():
+    squares = [x**2 for x in range(10)]
+    unique = {x for x in range(5)}
+    mapping = {k: v for k, v in zip("ab", [1,2])}
+    gen = (y for y in range(5))
+    return squares, unique, mapping, gen
+""")
+
+        parser = PythonASTParser(tmpdir)
+        result = parser.parse_file(test_file)
+
+        assert len(result.errors) == 0
+        listcomp_nodes = [n for n in result.nodes if n.type == "listcomp"]
+        setcomp_nodes = [n for n in result.nodes if n.type == "setcomp"]
+        dictcomp_nodes = [n for n in result.nodes if n.type == "dictcomp"]
+        genexp_nodes = [n for n in result.nodes if n.type == "genexp"]
+
+        assert len(listcomp_nodes) == 1
+        assert len(setcomp_nodes) == 1
+        assert len(dictcomp_nodes) == 1
+        assert len(genexp_nodes) == 1
+
+        # Check metadata
+        assert "result" in listcomp_nodes[0].node_metadata
+        assert "generators" in listcomp_nodes[0].node_metadata
+        assert listcomp_nodes[0].node_metadata["generators"] == 1
+
+        assert "result" in dictcomp_nodes[0].node_metadata
+        assert "k: v" in dictcomp_nodes[0].node_metadata["result"]

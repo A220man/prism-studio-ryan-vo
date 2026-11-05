@@ -1,8 +1,9 @@
 """
 Deterministic AST parser for Python files.
 
-Extracts typed nodes (functions, classes, imports) and edges (calls, imports, inheritance)
-from source code without relying on vector embeddings or LLMs.
+Extracts typed nodes (functions, classes, imports, lambdas, comprehensions) and edges
+(calls, imports, inheritance, containment) from source code without relying on vector
+embeddings or LLMs.
 """
 import ast
 import hashlib
@@ -30,6 +31,11 @@ class PythonASTParser:
         "import": "import",
         "import_from": "import_from",
         "module": "module",
+        "lambda": "lambda",
+        "listcomp": "listcomp",
+        "setcomp": "setcomp",
+        "dictcomp": "dictcomp",
+        "genexp": "genexp",
     }
 
     EDGE_TYPES = {
@@ -321,6 +327,95 @@ class PythonASTParser:
     def _visit_Name(self, node: ast.Name) -> None:
         """Track variable references (limited)."""
         self._generic_visit(node)
+
+    def _visit_Lambda(self, node: ast.Lambda) -> None:
+        """Extract lambda functions."""
+        container = self._current_class or self._current_module
+        if not container:
+            self._generic_visit(node)
+            return
+
+        # Create a name for the lambda based on context
+        lambda_name = f"<lambda:{node.lineno}>"
+        qualified_name = self._get_qualified_name(lambda_name)
+
+        lambda_node = self._add_node(
+            node_type="lambda",
+            name=lambda_name,
+            file_path=self._current_module.file_path if self._current_module else "",
+            line_start=node.lineno,
+            line_end=node.end_lineno or node.lineno,
+            metadata={
+                "args": [arg.arg for arg in node.args.args],
+                "returns": ast.unparse(node.body) if hasattr(node, 'body') else None,
+            },
+            qualified_name=qualified_name,
+        )
+
+        # Edge: container contains lambda
+        self._add_edge(container, lambda_node, "contains")
+
+        # Visit lambda body for nested calls
+        old_class = self._current_class
+        self._current_class = lambda_node
+        self._generic_visit(node)
+        self._current_class = old_class
+
+    def _visit_ListComp(self, node: ast.ListComp) -> None:
+        """Extract list comprehensions."""
+        self._handle_comprehension(node, "listcomp")
+
+    def _visit_SetComp(self, node: ast.SetComp) -> None:
+        """Extract set comprehensions."""
+        self._handle_comprehension(node, "setcomp")
+
+    def _visit_DictComp(self, node: ast.DictComp) -> None:
+        """Extract dict comprehensions."""
+        self._handle_comprehension(node, "dictcomp")
+
+    def _visit_GeneratorExp(self, node: ast.GeneratorExp) -> None:
+        """Extract generator expressions."""
+        self._handle_comprehension(node, "genexp")
+
+    def _handle_comprehension(self, node: ast.AST, comp_type: str) -> None:
+        """Extract comprehension (list, set, dict, generator)."""
+        container = self._current_class or self._current_module
+        if not container:
+            self._generic_visit(node)
+            return
+
+        comp_name = f"<{comp_type}:{node.lineno}>"
+        qualified_name = self._get_qualified_name(comp_name)
+
+        # Get the result expression (the first part before 'for')
+        result_expr = ""
+        if hasattr(node, 'elt'):
+            result_expr = ast.unparse(node.elt)
+        elif hasattr(node, 'key') and hasattr(node, 'value'):
+            result_expr = f"{ast.unparse(node.key)}: {ast.unparse(node.value)}"
+
+        comp_node = self._add_node(
+            node_type=comp_type,
+            name=comp_name,
+            file_path=self._current_module.file_path if self._current_module else "",
+            line_start=node.lineno,
+            line_end=node.end_lineno or node.lineno,
+            metadata={
+                "result": result_expr,
+                "generators": len(node.generators),
+            },
+            qualified_name=qualified_name,
+        )
+
+        # Edge: container contains comprehension
+        self._add_edge(container, comp_node, "contains")
+
+        # Visit comprehension body for nested calls
+        old_class = self._current_class
+        self._current_class = comp_node
+        self._generic_visit(node)
+        self._current_class = old_class
+
 
     def _get_qualified_name(self, name: str) -> str:
         """Build qualified name from current context."""
