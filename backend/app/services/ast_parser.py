@@ -52,6 +52,7 @@ class PythonASTParser:
         self._node_map: dict[str, GraphNode] = {}  # qualified name -> node
         self._current_module: Optional[GraphNode] = None
         self._current_class: Optional[GraphNode] = None
+        self._current_container_class: Optional[GraphNode] = None  # For super() calls
         self._import_aliases: dict[str, str] = {}  # alias -> full name
 
     def _make_id(self, *parts: str) -> str:
@@ -228,10 +229,13 @@ class PythonASTParser:
                 self._add_edge(class_node, base_node, "inherits", {"base": base_name})
 
         old_class = self._current_class
+        old_container_class = self._current_container_class
         self._current_class = class_node
+        self._current_container_class = class_node
         for child in node.body:
             self._visit(child)
         self._current_class = old_class
+        self._current_container_class = old_container_class
 
     def _visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
@@ -310,17 +314,40 @@ class PythonASTParser:
                 self._add_edge(caller, target, "calls", {"function": func_name})
 
         elif isinstance(node.func, ast.Attribute):
-            # Method call: obj.method()
             attr_name = node.func.attr
-            # Try to find the method in the current class or module
-            target = None
-            if self._current_class and self._current_class.type == "class":
-                qualified_method = f"{self._current_module.name}.{self._current_class.name}.{attr_name}" if self._current_module else f"{self._current_class.name}.{attr_name}"
-                target = self._node_map.get(qualified_method)
-            if not target:
-                target = self._node_map.get(attr_name)
-            if target and target.type == "function":
-                self._add_edge(caller, target, "calls", {"method": attr_name})
+            
+            # Check for super() call: super().method()
+            if (isinstance(node.func.value, ast.Call) and
+                isinstance(node.func.value.func, ast.Name) and
+                node.func.value.func.id == "super"):
+                # This is a super() call - find method in parent class(es)
+                if self._current_container_class and self._current_container_class.type == "class" and self._current_module:
+                    # Get parent class names from current class metadata
+                    bases = self._current_container_class.node_metadata.get("bases", [])
+                    for base in bases:
+                        # Try qualified name: module.ParentClass.method
+                        qualified_method = f"{self._current_module.name}.{base}.{attr_name}"
+                        target = self._node_map.get(qualified_method)
+                        if not target:
+                            # Try just ParentClass.method
+                            target = self._node_map.get(f"{base}.{attr_name}")
+                        if not target:
+                            # Try just method name
+                            target = self._node_map.get(attr_name)
+                        if target and target.type == "function":
+                            self._add_edge(caller, target, "calls", {"method": attr_name, "super": True})
+                            break
+            else:
+                # Regular method call: obj.method()
+                target = None
+                if self._current_class and self._current_class.type == "class":
+                    qualified_method = f"{self._current_module.name}.{self._current_class.name}.{attr_name}" if self._current_module else f"{self._current_class.name}.{attr_name}"
+                    target = self._node_map.get(qualified_method)
+                if not target:
+                    target = self._node_map.get(attr_name)
+                if target and target.type == "function":
+                    self._add_edge(caller, target, "calls", {"method": attr_name})
+
 
         self._generic_visit(node)
 
@@ -360,7 +387,6 @@ class PythonASTParser:
         self._current_class = lambda_node
         self._generic_visit(node)
         self._current_class = old_class
-
     def _visit_ListComp(self, node: ast.ListComp) -> None:
         """Extract list comprehensions."""
         self._handle_comprehension(node, "listcomp")
@@ -415,7 +441,6 @@ class PythonASTParser:
         self._current_class = comp_node
         self._generic_visit(node)
         self._current_class = old_class
-
 
     def _get_qualified_name(self, name: str) -> str:
         """Build qualified name from current context."""
