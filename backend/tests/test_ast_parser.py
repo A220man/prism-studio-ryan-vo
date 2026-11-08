@@ -311,3 +311,92 @@ def foo():
 
         assert "result" in dictcomp_nodes[0].node_metadata
         assert "k: v" in dictcomp_nodes[0].node_metadata["result"]
+
+def test_super_calls():
+    """Test that super() calls are parsed correctly."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        test_file = Path(tmpdir) / "test.py"
+        test_file.write_text("""
+class Base:
+    def method(self):
+        return "base"
+
+    def other(self):
+        return "other"
+
+class Derived(Base):
+    def method(self):
+        super().method()
+        super().other()
+
+    def call_super_in_nested(self):
+        def inner():
+            super().method()
+        inner()
+
+    def call_super_in_lambda(self):
+        func = lambda: super().method()
+        func()
+
+    def call_super_in_comp(self):
+        return [super().method() for _ in range(3)]
+""")
+
+        parser = PythonASTParser(tmpdir)
+        result = parser.parse_file(test_file)
+
+        assert len(result.errors) == 0
+        
+        # Find super call edges
+        super_edges = [e for e in result.edges if e.edge_metadata.get("super") is True]
+        assert len(super_edges) == 5  # method, other, nested (inner), lambda, comp
+        
+        # All should call Base.method or Base.other
+        for edge in super_edges:
+            assert edge.edge_metadata["method"] in ("method", "other")
+            # Target should be a function in Base
+            target_node = next(n for n in result.nodes if n.id == edge.target_id)
+            assert target_node.name in ("method", "other")
+            # Source should be the function containing the super() call
+            source_node = next(n for n in result.nodes if n.id == edge.source_id)
+            assert source_node.name in ("method", "inner", "call_super_in_lambda", "call_super_in_comp") or source_node.name.startswith("<lambda:") or source_node.name.startswith("<listcomp:")
+
+
+def test_super_multiple_inheritance():
+    """Test super() with multiple inheritance picks first base with method."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        test_file = Path(tmpdir) / "test.py"
+        test_file.write_text("""
+class Base1:
+    def method(self):
+        return "base1"
+
+class Base2:
+    def method(self):
+        return "base2"
+
+class Derived(Base1, Base2):
+    def method(self):
+        super().method()
+""")
+
+        parser = PythonASTParser(tmpdir)
+        result = parser.parse_file(test_file)
+
+        assert len(result.errors) == 0
+        
+        super_edges = [e for e in result.edges if e.edge_metadata.get("super") is True]
+        assert len(super_edges) == 1
+        
+        # Should call Base1.method (first in MRO)
+        target_node = next(n for n in result.nodes if n.id == super_edges[0].target_id)
+        assert target_node.name == "method"
+        # The target node should be Base1.method (check qualified name in metadata or node_map)
+        # Find the Base1 class node and verify the method belongs to it
+        base1_nodes = [n for n in result.nodes if n.type == "class" and n.name == "Base1"]
+        assert len(base1_nodes) == 1
+        base1 = base1_nodes[0]
+        # The target method should be contained in Base1
+        contains_edges = [e for e in result.edges if e.type == "contains" and e.source_id == base1.id]
+        method_ids = [e.target_id for e in contains_edges if next((n for n in result.nodes if n.id == e.target_id), None).type == "function"]
+        assert target_node.id in method_ids

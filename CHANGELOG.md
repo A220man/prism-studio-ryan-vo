@@ -1,8 +1,17 @@
 # Changelog
 
+## 1.4.0 — work-in-progress checkpoint
+
+Partial code published for continued development. Known issues: STATUS.md.
+
 ## 1.3.0 — work-in-progress checkpoint
 
 Partial code published for continued development. Known issues: STATUS.md.
+
+### Added
+- AST parser support for `super()` method calls with `super: true` metadata
+- Super call resolution across inheritance chains (including multiple inheritance)
+- New tests for super() call parsing in various contexts (nested functions, lambdas, comprehensions)
 
 ## 1.2.0 — work-in-progress checkpoint
 
