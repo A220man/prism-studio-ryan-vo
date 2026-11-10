@@ -36,6 +36,8 @@ class PythonASTParser:
         "setcomp": "setcomp",
         "dictcomp": "dictcomp",
         "genexp": "genexp",
+        "try": "try",
+        "with": "with",
     }
 
     EDGE_TYPES = {
@@ -402,6 +404,134 @@ class PythonASTParser:
     def _visit_GeneratorExp(self, node: ast.GeneratorExp) -> None:
         """Extract generator expressions."""
         self._handle_comprehension(node, "genexp")
+
+    def _handle_comprehension(self, node: ast.AST, comp_type: str) -> None:
+        """Extract comprehension (list, set, dict, generator)."""
+        container = self._current_class or self._current_module
+        if not container:
+            self._generic_visit(node)
+            return
+
+        comp_name = f"<{comp_type}:{node.lineno}>"
+        qualified_name = self._get_qualified_name(comp_name)
+
+        # Get the result expression (the first part before 'for')
+        result_expr = ""
+        if hasattr(node, 'elt'):
+            result_expr = ast.unparse(node.elt)
+        elif hasattr(node, 'key') and hasattr(node, 'value'):
+            result_expr = f"{ast.unparse(node.key)}: {ast.unparse(node.value)}"
+
+        comp_node = self._add_node(
+            node_type=comp_type,
+            name=comp_name,
+            file_path=self._current_module.file_path if self._current_module else "",
+            line_start=node.lineno,
+            line_end=node.end_lineno or node.lineno,
+            metadata={
+                "result": result_expr,
+                "generators": len(node.generators),
+            },
+            qualified_name=qualified_name,
+        )
+
+        # Edge: container contains comprehension
+        self._add_edge(container, comp_node, "contains")
+
+        # Visit comprehension body for nested calls
+        old_class = self._current_class
+        self._current_class = comp_node
+        self._generic_visit(node)
+        self._current_class = old_class
+    def _visit_Try(self, node: ast.Try) -> None:
+        """Extract try/except/finally blocks."""
+        container = self._current_class or self._current_module
+        if not container:
+            self._generic_visit(node)
+            return
+
+        try_name = f"<try:{node.lineno}>"
+        qualified_name = self._get_qualified_name(try_name)
+
+        # Collect exception types from handlers
+        exception_types = []
+        for handler in node.handlers:
+            if handler.type:
+                try:
+                    exception_types.append(ast.unparse(handler.type))
+                except Exception:
+                    exception_types.append(str(handler.type))
+
+        try_node = self._add_node(
+            node_type="try",
+            name=try_name,
+            file_path=self._current_module.file_path if self._current_module else "",
+            line_start=node.lineno,
+            line_end=node.end_lineno or node.lineno,
+            metadata={
+                "handlers": len(node.handlers),
+                "exception_types": exception_types,
+                "has_else": len(node.orelse) > 0,
+                "has_finally": len(node.finalbody) > 0,
+            },
+            qualified_name=qualified_name,
+        )
+
+        # Edge: container contains try block
+        self._add_edge(container, try_node, "contains")
+
+        # Visit try body, handlers, else, and finally for nested calls
+        old_class = self._current_class
+        self._current_class = try_node
+        self._generic_visit(node)
+        self._current_class = old_class
+
+    def _visit_With(self, node: ast.With) -> None:
+        """Extract with statements (context managers)."""
+        container = self._current_class or self._current_module
+        if not container:
+            self._generic_visit(node)
+            return
+
+        with_name = f"<with:{node.lineno}>"
+        qualified_name = self._get_qualified_name(with_name)
+
+        # Collect context manager expressions
+        context_managers = []
+        for item in node.items:
+            try:
+                context_expr = ast.unparse(item.context_expr)
+                if item.optional_vars:
+                    context_expr += f" as {ast.unparse(item.optional_vars)}"
+                context_managers.append(context_expr)
+            except Exception:
+                context_managers.append("<complex>")
+
+        with_node = self._add_node(
+            node_type="with",
+            name=with_name,
+            file_path=self._current_module.file_path if self._current_module else "",
+            line_start=node.lineno,
+            line_end=node.end_lineno or node.lineno,
+            metadata={
+                "context_managers": context_managers,
+            },
+            qualified_name=qualified_name,
+        )
+
+        # Edge: container contains with block
+        self._add_edge(container, with_node, "contains")
+
+        # Visit with body for nested calls
+        old_class = self._current_class
+        self._current_class = with_node
+        self._generic_visit(node)
+        self._current_class = old_class
+
+    def _visit_AsyncWith(self, node: ast.AsyncWith) -> None:
+        """Extract async with statements (async context managers)."""
+        # Handle same as regular with
+        self._visit_With(node)
 
     def _handle_comprehension(self, node: ast.AST, comp_type: str) -> None:
         """Extract comprehension (list, set, dict, generator)."""

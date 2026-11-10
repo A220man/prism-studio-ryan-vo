@@ -1,8 +1,19 @@
 # Changelog
 
+## 1.5.0 — work-in-progress checkpoint
+
+Partial code published for continued development. Known issues: STATUS.md.
+
 ## 1.4.0 — work-in-progress checkpoint
 
 Partial code published for continued development. Known issues: STATUS.md.
+
+### Added
+- AST parser support for `try/except/finally` blocks (`try` node type)
+- AST parser support for `with` and `async with` statements (`with` node type)
+- `try` nodes capture: handler count, exception types, else/finally presence
+- `with` nodes capture: context manager expressions with `as` variables
+- New tests: `test_try_except_finally`, `test_async_with`
 
 ## 1.3.0 — work-in-progress checkpoint
 
