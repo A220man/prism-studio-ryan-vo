@@ -312,6 +312,74 @@ def foo():
         assert "result" in dictcomp_nodes[0].node_metadata
         assert "k: v" in dictcomp_nodes[0].node_metadata["result"]
 
+def test_try_except_finally():
+    """Test parsing try/except/finally blocks."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        test_file = Path(tmpdir) / "test.py"
+        test_file.write_text("""
+def process_file(path: str) -> str:
+    try:
+        with open(path, 'r') as f:
+            content = f.read()
+        return content.upper()
+    except FileNotFoundError as e:
+        return f'Not found: {e}'
+    except Exception as e:
+        return f'Error: {e}'
+    finally:
+        print('Done')
+""")
+
+        parser = PythonASTParser(tmpdir)
+        result = parser.parse_file(test_file)
+
+        assert len(result.errors) == 0
+        try_nodes = [n for n in result.nodes if n.type == "try"]
+        assert len(try_nodes) == 1
+        try_node = try_nodes[0]
+        assert try_node.node_metadata["handlers"] == 2
+        assert "FileNotFoundError" in try_node.node_metadata["exception_types"]
+        assert "Exception" in try_node.node_metadata["exception_types"]
+        assert try_node.node_metadata["has_finally"] is True
+        assert try_node.node_metadata["has_else"] is False
+
+        # Check that with block is nested inside try
+        with_nodes = [n for n in result.nodes if n.type == "with"]
+        assert len(with_nodes) == 1
+        assert "open(path" in with_nodes[0].node_metadata["context_managers"][0]
+
+        # Check containment edges
+        contains_edges = [e for e in result.edges if e.type == "contains"]
+        # module -> function, function -> try, try -> with
+        assert len(contains_edges) >= 3
+
+
+def test_async_with():
+    """Test parsing async with statements."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        test_file = Path(tmpdir) / "test.py"
+        test_file.write_text("""
+async def async_process(path: str) -> str:
+    try:
+        async with aiofiles.open(path, 'r') as f:
+            content = await f.read()
+        return content
+    except Exception:
+        return ''
+""")
+
+        parser = PythonASTParser(tmpdir)
+        result = parser.parse_file(test_file)
+
+        assert len(result.errors) == 0
+        with_nodes = [n for n in result.nodes if n.type == "with"]
+        assert len(with_nodes) == 1
+        assert "aiofiles.open" in with_nodes[0].node_metadata["context_managers"][0]
+
+        try_nodes = [n for n in result.nodes if n.type == "try"]
+        assert len(try_nodes) == 1
+        assert try_nodes[0].node_metadata["handlers"] == 1
+        assert "Exception" in try_nodes[0].node_metadata["exception_types"]
 def test_super_calls():
     """Test that super() calls are parsed correctly."""
     with tempfile.TemporaryDirectory() as tmpdir:

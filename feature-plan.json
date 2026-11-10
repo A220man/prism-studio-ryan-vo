@@ -47,7 +47,7 @@
       "title": "Deterministic AST parsing for Python files",
       "status": "done",
       "acceptance": [
-        "Parse Python files into nodes (functions, classes, imports, lambdas, comprehensions)",
+        "Parse Python files into nodes (functions, classes, imports, lambdas, comprehensions, try/except/finally, with/async with)",
         "Extract edges (calls, imports, inheritance, containment)",
         "Store in SQLite with pagination"
       ],
