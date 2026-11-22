@@ -10,6 +10,14 @@ vi.mock("./api/client", () => ({
       version: "1.0.0",
       database: "connected",
     }),
+    graph: {
+      list: vi.fn().mockResolvedValue({
+        nodes: [],
+        edges: [],
+        total_nodes: 0,
+        total_edges: 0,
+      }),
+    },
   },
 }));
 
@@ -20,5 +28,10 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.queryByText("Loading...")).toBeNull();
     });
+  });
+
+  it("renders without crashing", () => {
+    const { rerender } = render(<App />);
+    expect(() => rerender(<App />)).not.toThrow();
   });
 });
