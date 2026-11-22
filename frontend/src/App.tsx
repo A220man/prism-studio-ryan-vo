@@ -1,23 +1,27 @@
 import { useState, useEffect } from "react";
 import { api, HealthResponse } from "./api/client";
+import { FileTree } from "./components/FileTree";
 import "./App.css";
 
 function App() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rootPath, setRootPath] = useState<string>("/var/lib/alan-portfolio/workspaces/ryan/prism-studio-ryan-vo/backend/app");
+  const [showFileTree, setShowFileTree] = useState(false);
 
   useEffect(() => {
-    const checkHealth = async () => {
+    async function checkHealth() {
       try {
         const data = await api.health();
         setHealth(data);
+        setRootPath(data.app === "Prism Studio" ? "/var/lib/alan-portfolio/workspaces/ryan/prism-studio-ryan-vo/backend/app" : "/var/lib/alan-portfolio/workspaces/ryan/prism-studio-ryan-vo");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
         setLoading(false);
       }
-    };
+    }
 
     checkHealth();
     const interval = setInterval(checkHealth, 30000);
@@ -102,6 +106,13 @@ function App() {
           Graph parsing and visualization coming in next iteration.
         </p>
       </div>
+
+      {showFileTree && health && (
+        <div className="card" style={{ marginTop: "1.5rem" }}>
+          <h2 style={{ marginBottom: "1rem", fontSize: "1.25rem" }}>File Tree with Parse Status</h2>
+          <FileTree rootPath={rootPath} />
+        </div>
+      )}
 
       <footer style={{ marginTop: "2rem", paddingTop: "1rem", borderTop: "1px solid #e5e7eb", color: "#9ca3af", fontSize: "0.875rem" }}>
         <p>Prism Studio — Ryan Vo ryandtvo@gmail.com | AI & Machine Learning</p>
