@@ -30,9 +30,9 @@ export function FileTree({ rootPath }: FileTreeProps) {
 
         if (result.nodes) {
           for (const node of result.nodes) {
-            if (node.type === "file" && node.file_path) {
+            if (node.type === "module" && node.file_path) {
               const relativePath = node.file_path.replace(rootPath, "").replace(/^\/+/, "");
-              const isParsed = node.type.includes("parsed") || false;
+              const isParsed = true;
               pythonFiles.push({
                 id: node.id,
                 name: relativePath.split("/").pop() || node.file_path,

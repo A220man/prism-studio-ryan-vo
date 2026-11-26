@@ -1,6 +1,13 @@
 # Changelog
 
-## 1.7.0 — work-in-progress checkpoint
+## 1.8.0 — work-in-progress checkpoint
+
+Partial code published for continued development. Known issues: STATUS.md.
+
+## 1.7.1 — work-in-progress checkpoint
+
+### Fixed
+- FileTree component: changed node type filter from "file" to "module" to match AST parser output; updated parse status display
 
 Partial code published for continued development. Known issues: STATUS.md.
 
