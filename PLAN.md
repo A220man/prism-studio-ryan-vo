@@ -4,7 +4,7 @@ Each round completes one feature or repair. Future items are planned, not implem
 
 ## Current round
 
-ast-parsing
+frontend-dashboard
 
 ## Roadmap
 
@@ -50,12 +50,16 @@ Tests: `backend/tests/test_health.py`
 
 ### frontend-dashboard — React dashboard with graph visualization
 
-Status: planned
+Status: done
 
 Acceptance:
 - File tree with parse status
 - Graph view with nodes/edges
 - Search and filter
+
+Implementation: `frontend/src/components/FileTree.tsx`
+
+Tests: `frontend/src/components/FileTree.test.tsx`
 
 ### oidc-auth — Keycloak OIDC authentication
 

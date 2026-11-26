@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "current_feature": "ast-parsing",
+  "current_feature": "frontend-dashboard",
   "features": [
     {
       "id": "skeleton",
@@ -84,14 +84,18 @@
     {
       "id": "frontend-dashboard",
       "title": "React dashboard with graph visualization",
-      "status": "planned",
+      "status": "done",
       "acceptance": [
         "File tree with parse status",
         "Graph view with nodes/edges",
         "Search and filter"
       ],
-      "implementation": [],
-      "tests": []
+      "implementation": [
+        "frontend/src/components/FileTree.tsx"
+      ],
+      "tests": [
+        "frontend/src/components/FileTree.test.tsx"
+      ]
     },
     {
       "id": "oidc-auth",
